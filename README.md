@@ -1,5 +1,7 @@
 # Grace
 
+A fork of Grace designed to open Grace's functionality for open models and systems.
+
 [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2FGabriella439%2Fgrace)](https://garnix.io/repo/Gabriella439/grace)
 [![BlueSky | @trygrace.dev](https://img.shields.io/badge/Bluesky-@trygrace.dev-blue)](https://bsky.app/profile/trygrace.dev)
 
