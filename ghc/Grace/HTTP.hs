@@ -44,6 +44,7 @@ import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Exception.Safe as Exception
 import qualified Control.Retry as Retry
 import qualified Data.Aeson as Aeson
+import qualified Data.List as List
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Encoding
 import qualified Data.Text.Lazy as Text.Lazy
@@ -54,6 +55,7 @@ import qualified Network.HTTP.Client.TLS as TLS
 import qualified Network.HTTP.Types as HTTP.Types
 import qualified OpenAI.V1 as OpenAI
 import qualified Servant.Client as Client
+import qualified System.Environment as Environment
 import qualified System.IO.Unsafe as Unsafe
 
 -- | Exception type thrown by `fetch` in the event of any failure
@@ -259,15 +261,34 @@ renderError (NotUTF8 unicodeException) =
     \" <> Text.pack (displayException unicodeException)
 
 -- | Initialize API for prompting
+--
+-- The endpoint is @https://api.openai.com@ unless the @OPENAI_BASE_URL@
+-- environment variable names another OpenAI-compatible server, such as a
+-- local gateway in front of ollama or llama.cpp.  The bindings add @/v1@ to
+-- every route themselves, so a trailing @/v1@ in the variable (the form most
+-- other clients document) is dropped rather than doubled.
 getMethods :: IO (Text -> Methods)
 getMethods = do
-    baseUrl <- Client.parseBaseUrl "https://api.openai.com"
+    configured <- Environment.lookupEnv "OPENAI_BASE_URL"
+
+    let base = case configured of
+            Just url | not (null url) -> withoutV1 url
+            _ -> "https://api.openai.com"
+
+    baseUrl <- Client.parseBaseUrl base
 
     manager <- newManager
 
     let clientEnv = Client.mkClientEnv manager baseUrl
 
     return (\key -> OpenAI.makeMethods clientEnv key organization Nothing)
+  where
+    withoutV1 url =
+        let trimmed = List.dropWhileEnd (== '/') url
+        in  maybe trimmed (List.dropWhileEnd (== '/')) (stripSuffix "/v1" trimmed)
+
+    stripSuffix suffix string =
+        fmap reverse (List.stripPrefix (reverse suffix) (reverse string))
 
 -- | This powers the @prompt@ keyword
 createChatCompletion
