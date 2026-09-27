@@ -38,7 +38,7 @@
                   hlib = self.haskell.lib;
 
                   mass = f:
-                    self.lib.fold
+                    self.lib.foldr
                       (name:
                         self.lib.composeExtensions
                           (hself: hsuper: {
@@ -54,7 +54,7 @@
                   };
 
                   ghcjsManualOverrides =
-                    self.lib.fold self.lib.composeExtensions (_: _: { }) [
+                    self.lib.foldr self.lib.composeExtensions (_: _: { }) [
                       (mass hlib.doJailbreak [
                         "aeson_1_5_6_0"
                         "ghcjs-base"
@@ -156,7 +156,7 @@
                   };
 
                 in
-                  self.lib.fold self.lib.composeExtensions oldOverrides
+                  self.lib.foldr self.lib.composeExtensions oldOverrides
                     (   [ directoryOverrides ]
                     ++  self.lib.optional (compiler == "ghcjs") ghcjsSourceOverrides
                     ++  self.lib.optional (compiler == "ghcjs") ghcjsManualOverrides
