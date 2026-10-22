@@ -473,7 +473,7 @@ prompt generateContext import_ location Prompt{ key = Grace.Decode.Key{ text = k
                                 , reasoning_effort
                                 }
 
-                        output <- toOutput chatCompletionObject
+                        output <- stripCodeFence <$> toOutput chatCompletionObject
 
                         parent <- Reader.ask
 
@@ -730,3 +730,24 @@ instance Exception ModelDecodingFailed where
         \Decoding error message:\n\
         \\n\
         \" <> message
+
+{-| Remove a Markdown code fence wrapped around a whole reply.
+
+    The instructions ask for a naked Grace expression, but small models
+    fence their code anyway (qwen2.5-coder-7b did on every attempt, repairs
+    included), and the lexer then rejects the first backtick.  Only a fence
+    that opens the reply is removed: its opening line, whatever language tag
+    it carries, and a closing fence at the end if there is one.  Anything
+    else is passed to the interpreter as the model wrote it.
+-}
+stripCodeFence :: Text -> Text
+stripCodeFence reply
+    | "```" `Text.isPrefixOf` trimmed =
+        let body = Text.drop 1 (Text.dropWhile (/= '\n') trimmed)
+            withoutClose = case Text.stripSuffix "```" (Text.stripEnd body) of
+                Just b -> b
+                Nothing -> body
+        in  Text.strip withoutClose
+    | otherwise = reply
+  where
+    trimmed = Text.strip reply
